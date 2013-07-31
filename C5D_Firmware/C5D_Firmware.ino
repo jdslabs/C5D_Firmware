@@ -44,15 +44,15 @@ boolean lowBatt = false;                     // Low Battery Indicator
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
-int VolDelay = 500;                         // Delay (milliseconds) before volume control quickly transitions through steps
-int StepPause = 66;                         // Delay (milliseconds) between each volume step in seek mode. Minimum value is 55ms, due to write time of DS1882
-int PwrCheck = 500;                         // Delay (milliseconds) between periodically checking battery volume. Directly affects speed of low battery LED flashing
+int VolDelay = 500;                          // Delay (milliseconds) before volume control quickly transitions through steps
+int StepPause = 66;                          // Delay (milliseconds) between each volume step in seek mode. Minimum value is 55ms, due to write time of DS1882
+int PwrCheck = 500;                          // Delay (milliseconds) between periodically checking battery volume. Directly affects speed of low battery LED flashing
 float LowVoltageThreshold = 3.51;            // 'Low' hysteresis threshold (voltage at which low battery flashing begins). 3.50V should yield 45-90 minute warning.
 float HighVoltageThreshold = 3.55;           // 'High' hysteresis threshold for low battery detection
 
 void setup()
 {
-  delay(50);                                      // Wait for power to stabilize, then setup I/O pins
+  delay(50);                                 // Wait for power to stabilize, then setup I/O pins
   pinMode(LLF, OUTPUT);
   pinMode(DAC5VEN, OUTPUT);
   pinMode(DACPWREN, OUTPUT);
@@ -62,29 +62,28 @@ void setup()
   pinMode(ENPOSREG, OUTPUT);
   pinMode(GAIN, OUTPUT);
   pinMode(PWRVOLLED, OUTPUT);
-  pinMode(upButton, INPUT);                       // Declare pushbuttons as inputs
+  pinMode(upButton, INPUT);                      // Declare pushbuttons as inputs
   pinMode(downButton, INPUT);
   pinMode(centerButton, INPUT);
 
   digitalWrite(ENPOSREG, HIGH);                  // Enable +7V LDO
   digitalWrite(ENNEGREG, HIGH);                  // Enable -7V LDO
-  delay(200);                                     // Wait for power to stabilize
+  delay(200);                                    // Wait for power to stabilize
   digitalWrite(PWRVOLLED, LOW);                  // Turn Power LED on, turn gain and bass LEDs off
   digitalWrite(POTPOWER, HIGH);                  // Enable DS1882 IC
   delay(50); 
-  digitalWrite(GAIN, LOW);                      // Set gain HIGH
+  digitalWrite(GAIN, LOW);                       // Set gain HIGH
   
-  // Setup DAC (OFF by default)
-  digitalWrite(LLF, DACFilterState);          // Set low latency filter to default value  
+  // Setup DAC (OFF by default) 
   DACPowerEnable = LOW;                           
   digitalWrite(DAC5VEN, LOW); 
-  delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
+  delay(25);                                    // Wait for 5V power to stabilize before enabling 3.3V regulators
   digitalWrite(DACPWREN, LOW); 
   
   // Setup Serial
   Wire.begin();                                  // Join the I2C bus as master device
-  Serial.begin(9600);                            //Set up Serial Library at 9600 bps
-  Serial.println("Started Successfully!!");      //Confirm Startup
+  Serial.begin(9600);                            // Set up Serial Library at 9600 bps
+  Serial.println("Started Successfully!!");      // Confirm Startup
  
   // Sets DS1882 registers to nonvolatile memory, zero-crossing enabled, and 64 tap positions (pg 10 of datasheet)
   // FUTURE: This only needs to be performed once--read register and only write if necessary!
@@ -286,8 +285,9 @@ void checkBattery()
          digitalWrite(DAC5VEN, HIGH); 
          delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
          digitalWrite(DACPWREN, HIGH); 
-         Serial.println("Dac power set to: ON");    //print Dac Power State
-         Serial.println(BattVoltage);    //print Dac Power State
+         digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
+         Serial.println("Dac power set to: ON");          //print Dac Power State
+         Serial.println(BattVoltage);                     //print Dac Power State
     }
     changeLEDs();                                        // Call LED function to perform toggle
 }
