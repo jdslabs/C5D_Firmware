@@ -41,6 +41,7 @@ unsigned long volumeChangeTimer = 0;         // Time of Last Volume Change
 unsigned long gainChangeTimer = 0;           // Time of Last Gain Change
 unsigned long startTime = 0;                 // Start time for Volume Change Debounce
 boolean lowBatt = false;                     // Low Battery Indicator
+int lastKnowBattVoltage = 0;                 // Battery Voltage for iPad Operations....poorly commented 
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
@@ -257,9 +258,35 @@ void changeLEDs()
     
 }
 
+void turnDacOn(){    
+    // Turn DAC on if system voltage is higher than battery voltage (i.e., USB cable is connected). Note that iPad USB output is
+    // only 4.5V, and C5 defaults to battery power (< 4.4). 
+         DACPowerEnable = HIGH;                           
+         digitalWrite(DAC5VEN, HIGH); 
+         delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
+         digitalWrite(DACPWREN, HIGH); 
+         digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
+         Serial.println("Dac power set to: ON");          //print Dac Power State
+         Serial.println(BattVoltage);                     //print Dac Power State
+}
+
+//Function to turn DAC off
+void turnDacOff(){    
+    // Turn DAC on if system voltage is higher than battery voltage (i.e., USB cable is connected). Note that iPad USB output is
+    // only 4.5V, and C5 defaults to battery power (< 4.4). 
+         digitalWrite(LLF, LOW);               // Set low latency filter to default value 
+         DACPowerEnable = LOW;                           
+         digitalWrite(DACPWREN, LOW); 
+         delay(25); 
+         digitalWrite(DAC5VEN, LOW);                      // Wait for 5V power to stabilize before enabling 3.3V regulators
+         Serial.println("Dac power set to: ON");          //print Dac Power State
+         Serial.println(BattVoltage);                     //print Dac Power State
+}
+
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
 void checkBattery()                                       
 {
+    lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
     //Serial.println(BattVoltage);    //print Dac Power State
        
@@ -277,17 +304,17 @@ void checkBattery()
     else{
       flashState = LOW;
     }
-    
-    // Turn DAC on if system voltage is higher than battery voltage (i.e., USB cable is connected). Note that iPad USB output is
-    // only 4.5V, and C5 defaults to battery power (< 4.4). 
-    if(DACPowerEnable == LOW && BattVoltage > 4.0){        // If DAC is off and USB cable is connected, enable DAC
-         DACPowerEnable = HIGH;                           
-         digitalWrite(DAC5VEN, HIGH); 
-         delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
-         digitalWrite(DACPWREN, HIGH); 
-         digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
-         Serial.println("Dac power set to: ON");          //print Dac Power State
-         Serial.println(BattVoltage);                     //print Dac Power State
-    }
-    changeLEDs();                                        // Call LED function to perform toggle
+    //Function to turn the DAC on 
+ if(DACPowerEnable == LOW && BattVoltage > 4.0){
+   turnDacOn();
+ }
+ 
+ if (BattVoltage < 4 && lastKnowBattVoltage > 4){
+    turnDacOff();
+    delay(55);
+    turnDacOn();
 }
+
+    changeLEDs();                                        // Call LED function to perform toggle
+  }
+
