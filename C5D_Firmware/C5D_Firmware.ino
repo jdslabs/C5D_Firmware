@@ -51,8 +51,8 @@ boolean isIpad = false;                      //If the amp thinks it is an iPad..
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
-int VolDelay = 500;                          // Delay (milliseconds) before volume control quickly transitions through steps
-int StepPause = 66;                          // Delay (milliseconds) between each volume step in seek mode. Minimum value is 55ms, due to write time of DS1882
+int VolDelay = 375;                          // Delay (milliseconds) before volume control quickly transitions through steps
+int StepPause = 55;                          // Delay (milliseconds) between each volume step in seek mode. Minimum value is 55ms, due to write time of DS1882
 int PwrCheck = 500;                          // Delay (milliseconds) between periodically checking battery volume. Directly affects speed of low battery LED flashing
 float LowVoltageThreshold = 3.51;            // 'Low' hysteresis threshold (voltage at which low battery flashing begins). 3.50V should yield 45-90 minute warning.
 float HighVoltageThreshold = 3.55;           // 'High' hysteresis threshold for low battery detection
