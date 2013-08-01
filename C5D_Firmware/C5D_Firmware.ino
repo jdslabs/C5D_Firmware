@@ -46,7 +46,8 @@ unsigned long volumeChangeTimer = 0;         // Time of Last Volume Change
 unsigned long gainChangeTimer = 0;           // Time of Last Gain Change
 unsigned long startTime = 0;                 // Start time for Volume Change Debounce
 boolean lowBatt = false;                     // Low Battery Indicator
-float lastKnowBattVoltage = 0;                 // Battery Voltage for iPad Operations....poorly commented 
+float lastKnowBattVoltage = 0;               // Battery Voltage for iPad Operations....poorly commented 
+boolean isIpad = false;                      //If the amp thinks it is an iPad...
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
@@ -351,18 +352,24 @@ void checkBattery()
 
     // Nominal USB voltage is 5V. If system voltage is < 80% of 5V, we can assume that no USB cable is connected, 
     // and thus no DAC is connected, so power to the DAC should be disabled. Otherwise, turn the DAC on.
-    if(BattVoltage < 4.4 && DACPowerEnable == HIGH){        // If DAC is on and USB cable is unplugged, disable DAC                              
+    
+    //Conditions for "PC Mode"
+    if(BattVoltage < 4.4 && isIpad == false){        // If DAC is on and USB cable is unplugged, disable DAC                              
       turnDacOn();
       lcd.println("Bat:");
       lcd.println(BattVoltage, 2);
       delay(1000);
     }
-    else if (DACPowerEnable == LOW && BattVoltage > 4.4){     // If DAC is off and USB cable is connected, enable DAC
+    else if (DACPowerEnable == HIGH && BattVoltage > 4.4 && isIpad == false){     // If DAC is off and USB cable is connected, enable DAC
         turnDacOn();   
         lcd.println("Bat:");
         lcd.println(BattVoltage, 2);
         delay(1000);        
         }
+    else if (lastKnowBattVoltage  > 4.4 && BattVoltage < 4){
+     isIpad = true;
+     turnDacOn(); 
+    }
     
 
     changeLEDs();                                        // Call LED function to perform toggle
