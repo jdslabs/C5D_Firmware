@@ -10,6 +10,11 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
+//LCD Stuff
+#include <SoftwareSerial.h>
+SoftwareSerial lcd(10, 1);
+
+
 // PINOUTS (Note: Pinout of centerButton differs between C5 (centerButton=0) and C5D (centerButton=3)
 int upButton = 2;       // Attenuation UP pushbutton
 int downButton = 5;     // Attenuation DOWN pushbutton
@@ -41,7 +46,7 @@ unsigned long volumeChangeTimer = 0;         // Time of Last Volume Change
 unsigned long gainChangeTimer = 0;           // Time of Last Gain Change
 unsigned long startTime = 0;                 // Start time for Volume Change Debounce
 boolean lowBatt = false;                     // Low Battery Indicator
-int lastKnowBattVoltage = 0;                 // Battery Voltage for iPad Operations....poorly commented 
+float lastKnowBattVoltage = 0;                 // Battery Voltage for iPad Operations....poorly commented 
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
@@ -81,10 +86,14 @@ void setup()
   delay(25);                                    // Wait for 5V power to stabilize before enabling 3.3V regulators
   digitalWrite(DACPWREN, LOW); 
   
+  
   // Setup Serial
   Wire.begin();                                  // Join the I2C bus as master device
-  Serial.begin(9600);                            // Set up Serial Library at 9600 bps
-  Serial.println("Started Successfully!!");      // Confirm Startup
+  
+  // Setup LCD
+  delay(5000);
+  lcd.begin(9600);                              // start lcd serial
+ 
  
   // Sets DS1882 registers to nonvolatile memory, zero-crossing enabled, and 64 tap positions (pg 10 of datasheet)
   // FUTURE: This only needs to be performed once--read register and only write if necessary!
@@ -110,7 +119,7 @@ void setup()
     attenuation = 62;
   }
   changeVolume();
-  
+
 }
 
 
@@ -128,11 +137,9 @@ void loop()
     if (centertemp == HIGH) {                      // If user pressed center pushbutton, toggle gain
         if(gainstate < 1){
           gainstate = 1;
-          Serial.println("Center Toggle"); //print gainstate
         }
         else{
           gainstate = 0;
-          Serial.println("Center Toggle"); //print gainstate
         }
         
         changeGain();
@@ -153,12 +160,16 @@ void loop()
                                                         
       if ((uptemp == HIGH) && (attenuation < 63)) {   // Check if button was really pressed and dealing with the direction  
           attenuation++;                              // If user pressed button and volume isn't already at min.
-          Serial.println(attenuation);                // Increase the potentiometer attenuation value
+          
+          clearDisplay(); 
+          lcd.println(attenuation);
       }
 
       if ((downtemp == HIGH) && (attenuation > 0)) {  // If user pressed button and volume isn't already at max.
           attenuation--;                              // Decrease the potentiometer attenuation value
-          Serial.println(attenuation);
+          
+          clearDisplay(); 
+          lcd.println(attenuation);
       }
       
       changeVolume();                                 // Perform initial volume change
@@ -170,7 +181,6 @@ void loop()
           
           // Exit loop if user releases button
           if ((uptemp != HIGH) && (downtemp != HIGH)){
-            Serial.println("Leaving quitely");
             break;
           }
        }
@@ -180,7 +190,10 @@ void loop()
             downtemp = digitalRead(downButton);        // Update the down pushbutton
             delay(StepPause);                          // Delay between each step
             attenuation--;                             // Increment attenuation
-            Serial.println(attenuation);
+          
+            clearDisplay(); 
+          lcd.println(attenuation);
+          
             changeVolume();                            // Perform volume change
           }while((downtemp == HIGH) && (attenuation > 0));    // Ensure attenuation is within valid range
       }
@@ -190,7 +203,10 @@ void loop()
             uptemp = digitalRead(upButton);           // Update the up pushbutton
             delay(StepPause);                         // Delay between each step
             attenuation++;                            // Decrement attenuation
-            Serial.println(attenuation);
+            
+            clearDisplay(); 
+          lcd.println(attenuation);
+          
             changeVolume();                           // Perform volume change
           }while((uptemp == HIGH) && (attenuation < 63));    // Ensure attenuation is within valid range
       }
@@ -242,6 +258,12 @@ void changeGain()
 
 }
 
+void clearDisplay()
+{
+  lcd.write(0xFE);  // send the special command
+  lcd.write(0x01);  // send the clear screen command
+}
+
 void changeLEDs()
 {
     if(flashState == LOW && lowBatt == true){       // If the battery is low, toggle the LED according to flashState
@@ -266,8 +288,9 @@ void turnDacOn(){
          delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
          digitalWrite(DACPWREN, HIGH); 
          digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
-         Serial.println("Dac power set to: ON");          //print Dac Power State
-         Serial.println(BattVoltage);                     //print Dac Power State
+        
+        clearDisplay(); 
+         lcd.println("DAC ON");
 }
 
 //Function to turn DAC off
@@ -279,17 +302,20 @@ void turnDacOff(){
          digitalWrite(DACPWREN, LOW); 
          delay(25); 
          digitalWrite(DAC5VEN, LOW);                      // Wait for 5V power to stabilize before enabling 3.3V regulators
-         Serial.println("Dac power set to: ON");          //print Dac Power State
-         Serial.println(BattVoltage);                     //print Dac Power State
+         
+         clearDisplay(); 
+         lcd.println("DAC OFF");
 }
 
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
 void checkBattery()                                       
 {
+  lastKnowBattVoltage =0;
     lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
-    //Serial.println(BattVoltage);    //print Dac Power State
-       
+    
+    lcd.println(lastKnowBattVoltage, 2);
+    
     if(BattVoltage > HighVoltageThreshold){                // Use of hysteresis to avoid erratic LED toggling
       flashState = LOW;                                    // flashState toggles if voltage is below the hysteresis threshold,
       lowBatt = false;                                     // lowBatt prevents flashState from toggling when above high threshold
@@ -304,17 +330,40 @@ void checkBattery()
     else{
       flashState = LOW;
     }
-    //Function to turn the DAC on 
- if(DACPowerEnable == LOW && BattVoltage > 4.0){
-   turnDacOn();
- }
- 
- if (BattVoltage < 4 && lastKnowBattVoltage > 4){
-    turnDacOff();
-    delay(55);
-    turnDacOn();
-}
+    
+//    //Function to turn the DAC on 
+// if(DACPowerEnable == LOW && BattVoltage > 4.0){
+//    turnDacOn();
+//    
+//    clearDisplay(); 
+//    lcd.println("Bat:" && BattVoltage && ", was:" && lastKnowBattVoltage);
+//    delay(1000);
+// }
+// if (BattVoltage < 4 && DACPowerEnable == HIGH){
+//   clearDisplay(); 
+//    lcd.println("Bat:" && BattVoltage && ", was:" && lastKnowBattVoltage);
+//    
+//    turnDacOff();
+//    delay(300);
+//    turnDacOn();
+//    delay(1000);
+//}
+
+    // Nominal USB voltage is 5V. If system voltage is < 80% of 5V, we can assume that no USB cable is connected, 
+    // and thus no DAC is connected, so power to the DAC should be disabled. Otherwise, turn the DAC on.
+    if(BattVoltage < 4.4 && DACPowerEnable == HIGH){        // If DAC is on and USB cable is unplugged, disable DAC                              
+      turnDacOn();
+      lcd.println("Bat:");
+      lcd.println(BattVoltage, 2);
+      delay(1000);
+    }
+    else if (DACPowerEnable == LOW && BattVoltage > 4.4){     // If DAC is off and USB cable is connected, enable DAC
+        turnDacOn();   
+        lcd.println("Bat:");
+        lcd.println(BattVoltage, 2);
+        delay(1000);        
+        }
+    
 
     changeLEDs();                                        // Call LED function to perform toggle
   }
-
