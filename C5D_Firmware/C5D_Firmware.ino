@@ -327,40 +327,20 @@ void checkBattery()
       flashState = LOW;
     }
     
-//    //Function to turn the DAC on 
-// if(DACPowerEnable == LOW && BattVoltage > 4.0){
-//    turnDacOn();
-//    
-//    clearDisplay(); 
-//    lcd.println("Bat:" && BattVoltage && ", was:" && lastKnowBattVoltage);
-//    delay(1000);
-// }
-// if (BattVoltage < 4 && DACPowerEnable == HIGH){
-//   clearDisplay(); 
-//    lcd.println("Bat:" && BattVoltage && ", was:" && lastKnowBattVoltage);
-//    
-//    turnDacOff();
-//    delay(300);
-//    turnDacOn();
-//    delay(1000);
-//}
-
-    // Nominal USB voltage is 5V. If system voltage is < 80% of 5V, we can assume that no USB cable is connected, 
-    // and thus no DAC is connected, so power to the DAC should be disabled. Otherwise, turn the DAC on.
-    
-    // If voltage was previously between 4.40-4.89V, but has dropped to battery voltage in < 500ms, an iPad might be connected
+    // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
+    // If voltage was previously between 4.40-4.89V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
     if (lastKnowBattVoltage < 4.89 && lastKnowBattVoltage  > 4.4 && BattVoltage < 4){
      isIpad = true;
      turnDacOn(); 
     }
     
-    // If voltage is beyond iPad capacity, it must not be an iPad...
+    // If voltage exceeds iPad's capability, it must not be an iPad...
     if (lastKnowBattVoltage > 4.90 && BattVoltage > 4.80 && isIpad == true){
       isIpad = false;                                  
     }
     
-    //Conditions for "PC Mode"
-    if(BattVoltage > 4.4 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is plugged, enable DAC                              
+    // Conditions for "PC Mode"
+    if(BattVoltage > 4.4 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
       turnDacOn();
       lcd.println("PC - DAC ON");
       lcd.println(BattVoltage, 2);
@@ -374,8 +354,5 @@ void checkBattery()
         delay(1000);        
         }
         
-
-    
-
     changeLEDs();                                        // Call LED function to perform toggle
   }
