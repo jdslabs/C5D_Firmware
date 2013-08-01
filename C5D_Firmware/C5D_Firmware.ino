@@ -305,9 +305,11 @@ void checkBattery()
       flashState = LOW;
     }
     //Function to turn the DAC on 
-
-
-if ((BattVoltage > 4 && BattVoltage < 4.5) && (lastKnowBattVoltage > 4.5)){
+ if(DACPowerEnable == LOW && BattVoltage > 4.0){
+   turnDacOn();
+ }
+ 
+ if (BattVoltage < 4 && lastKnowBattVoltage > 4){
     turnDacOff();
     delay(55);
     turnDacOn();
