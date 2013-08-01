@@ -92,7 +92,7 @@ void setup()
   Wire.begin();                                  // Join the I2C bus as master device
   
   // Setup LCD
-  delay(5000);
+  delay(3000);
   lcd.begin(9600);                              // start lcd serial
  
  
@@ -289,9 +289,6 @@ void turnDacOn(){
          delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
          digitalWrite(DACPWREN, HIGH); 
          digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
-        
-        clearDisplay(); 
-         lcd.println("DAC ON");
 }
 
 //Function to turn DAC off
@@ -304,14 +301,12 @@ void turnDacOff(){
          delay(25); 
          digitalWrite(DAC5VEN, LOW);                      // Wait for 5V power to stabilize before enabling 3.3V regulators
          
-         clearDisplay(); 
-         lcd.println("DAC OFF");
 }
 
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
 void checkBattery()                                       
 {
-  lastKnowBattVoltage =0;
+  lastKnowBattVoltage = 0;
     lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
     
@@ -353,23 +348,33 @@ void checkBattery()
     // Nominal USB voltage is 5V. If system voltage is < 80% of 5V, we can assume that no USB cable is connected, 
     // and thus no DAC is connected, so power to the DAC should be disabled. Otherwise, turn the DAC on.
     
-    //Conditions for "PC Mode"
-    if(BattVoltage < 4.4 && isIpad == false){        // If DAC is on and USB cable is unplugged, disable DAC                              
-      turnDacOn();
-      lcd.println("Bat:");
-      lcd.println(BattVoltage, 2);
-      delay(1000);
-    }
-    else if (DACPowerEnable == HIGH && BattVoltage > 4.4 && isIpad == false){     // If DAC is off and USB cable is connected, enable DAC
-        turnDacOn();   
-        lcd.println("Bat:");
-        lcd.println(BattVoltage, 2);
-        delay(1000);        
-        }
-    else if (lastKnowBattVoltage  > 4.4 && BattVoltage < 4){
+    // If voltage was previously between 4.40-4.89V, but has dropped to battery voltage in < 500ms, an iPad might be connected
+    if (lastKnowBattVoltage < 4.89 && lastKnowBattVoltage  > 4.4 && BattVoltage < 4){
      isIpad = true;
      turnDacOn(); 
     }
+    
+    // If voltage is beyond iPad capacity, it must not be an iPad...
+    if (lastKnowBattVoltage > 4.90 && BattVoltage > 4.80 && isIpad == true){
+      isIpad = false;                                  
+    }
+    
+    //Conditions for "PC Mode"
+    if(BattVoltage > 4.4 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is plugged, enable DAC                              
+      turnDacOn();
+      lcd.println("PC - DAC ON");
+      lcd.println(BattVoltage, 2);
+      delay(1000);
+      
+    }
+    else if (DACPowerEnable == HIGH && BattVoltage <= 4.4 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
+        turnDacOff();   
+        lcd.println("PC - DAC OFF");
+        lcd.println(BattVoltage, 2);
+        delay(1000);        
+        }
+        
+
     
 
     changeLEDs();                                        // Call LED function to perform toggle
