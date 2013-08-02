@@ -36,6 +36,7 @@ int centertemp = 0;                          // NOTE: Attenuation & bass should 
 byte gainstate = 0;                          // Stores current gain, where 1 = low, 0 = high
 byte lastStoredGainState = 0;                // Last stored EEPROM gain
 byte attenuation = 62;                       // Attenuation value of volume potentiometer gangs. Initially set to minimum volume.
+byte PriorAtten = 62;                        // Hols attenuation during mute function
 byte tempattenuation = 0;                    // Holds attenuation value for second pot bitwise operation
 byte lastStoredAttenuation = 0;              // Last stored EEPROM volume
 float BattVoltage = 5;                       // Temp variable to read battery voltage
@@ -278,30 +279,41 @@ void changeLEDs()
     
     else{                                         // Activate LED as usual if the battery isn't low
         digitalWrite(PWRVOLLED, LOW); 
-    }
-    
+    } 
 }
 
-void turnDacOn(){    
-    // Turn DAC on if system voltage is higher than battery voltage (i.e., USB cable is connected). Note that iPad USB output is
-    // only 4.5V, and C5 defaults to battery power (< 4.4). 
-         DACPowerEnable = HIGH;                           
-         digitalWrite(DAC5VEN, HIGH); 
-         delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
-         digitalWrite(DACPWREN, HIGH); 
-         digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
+void turnDacOn(){                                   // Mutes amp, turns DAC on and waits 2sec for DAC to prepare, then un-mutes
+   mute();              
+   DACPowerEnable = HIGH;                           
+   digitalWrite(DAC5VEN, HIGH); 
+   delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
+   digitalWrite(DACPWREN, HIGH); 
+   digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
+   delay(2000);
+   UnMute();
 }
 
-//Function to turn DAC off
-void turnDacOff(){    
-    // Turn DAC on if system voltage is higher than battery voltage (i.e., USB cable is connected). Note that iPad USB output is
-    // only 4.5V, and C5 defaults to battery power (< 4.4). 
-         digitalWrite(LLF, LOW);               // Set low latency filter to default value 
-         DACPowerEnable = LOW;                           
-         digitalWrite(DACPWREN, LOW); 
-         delay(25); 
-         digitalWrite(DAC5VEN, LOW);                      // Wait for 5V power to stabilize before enabling 3.3V regulators
-         
+void turnDacOff(){                                 // Mutes amp, turns DAC off and waits 2sec for DAC to prepare, then un-mutes
+   mute();
+   digitalWrite(LLF, LOW);                         // Set FLT/LLF low (otherwise 5V is applied to an unpowered chip) 
+   DACPowerEnable = LOW;                           
+   digitalWrite(DACPWREN, LOW); 
+   delay(25); 
+   digitalWrite(DAC5VEN, LOW);                     // Wait for 5V power to stabilize before enabling 3.3V regulators 
+   delay(2000);
+   UnMute();
+}
+
+void mute()                                       // Records current volume, then sets amp to mute
+{
+    PriorAtten = attenuation;
+    attenuation = 63;
+    changeVolume();
+}
+
+void UnMute(){                                   // Restores volume to level prior to muting
+    attenuation = PriorAtten;
+    changeVolume();
 }
 
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
@@ -329,7 +341,7 @@ void checkBattery()
     }
     
     // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
-    // If voltage was previously between 4.40-4.89V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
+    // If voltage was previously between 4.10-4.95V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
     if (lastKnowBattVoltage  >= 4.1 && lastKnowBattVoltage < 4.95 && BattVoltage < 4.1){
      isIpad = true;
      VoltageUponIpad = BattVoltage;
