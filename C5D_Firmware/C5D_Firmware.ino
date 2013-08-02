@@ -47,7 +47,8 @@ unsigned long gainChangeTimer = 0;           // Time of Last Gain Change
 unsigned long startTime = 0;                 // Start time for Volume Change Debounce
 boolean lowBatt = false;                     // Low Battery Indicator
 float lastKnowBattVoltage = 0;               // Battery Voltage for iPad Operations....poorly commented 
-boolean isIpad = false;                      //If the amp thinks it is an iPad...
+float VoltageUponIpad = 0;                   // Recorded Battery voltage at time of iPad connection
+boolean isIpad = false;                      // If the amp thinks it is an iPad...
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
@@ -329,25 +330,26 @@ void checkBattery()
     
     // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
     // If voltage was previously between 4.40-4.89V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
-    if (lastKnowBattVoltage < 4.89 && lastKnowBattVoltage  > 4.4 && BattVoltage < 4){
+    if (lastKnowBattVoltage  >= 4.1 && lastKnowBattVoltage < 4.95 && BattVoltage < 4.1){
      isIpad = true;
+     VoltageUponIpad = BattVoltage;
      turnDacOn(); 
     }
     
     // If voltage exceeds iPad's capability, it must not be an iPad...
-    if (lastKnowBattVoltage > 4.90 && BattVoltage > 4.80 && isIpad == true){
-      isIpad = false;                                  
+    if ((lastKnowBattVoltage > 4.9) && (BattVoltage > 4.80) && isIpad == true && (BattVoltage > VoltageUponIpad + 0.12)){
+      isIpad = false;                        
     }
     
     // Conditions for "PC Mode"
-    if(BattVoltage > 4.4 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
+    if(BattVoltage >= 4.1 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
       turnDacOn();
       lcd.println("PC - DAC ON");
       lcd.println(BattVoltage, 2);
       delay(1000);
       
     }
-    else if (DACPowerEnable == HIGH && BattVoltage <= 4.4 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
+    else if (DACPowerEnable == HIGH && BattVoltage < 4.1 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
         turnDacOff();   
         lcd.println("PC - DAC OFF");
         lcd.println(BattVoltage, 2);
