@@ -283,7 +283,8 @@ void changeLEDs()
 }
 
 void turnDacOn(){                                   // Mutes amp, turns DAC on and waits 2sec for DAC to prepare, then un-mutes
-   mute();              
+   mute();             
+   lcd.println("Muted");
    DACPowerEnable = HIGH;                           
    digitalWrite(DAC5VEN, HIGH); 
    delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
@@ -291,10 +292,13 @@ void turnDacOn(){                                   // Mutes amp, turns DAC on a
    digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
    delay(2000);
    UnMute();
+   lcd.println("Vol: ");
+   lcd.print(attenuation);
 }
 
 void turnDacOff(){                                 // Mutes amp, turns DAC off and waits 2sec for DAC to prepare, then un-mutes
    mute();
+   lcd.println("Muted");
    digitalWrite(LLF, LOW);                         // Set FLT/LLF low (otherwise 5V is applied to an unpowered chip) 
    DACPowerEnable = LOW;                           
    digitalWrite(DACPWREN, LOW); 
@@ -302,6 +306,8 @@ void turnDacOff(){                                 // Mutes amp, turns DAC off a
    digitalWrite(DAC5VEN, LOW);                     // Wait for 5V power to stabilize before enabling 3.3V regulators 
    delay(2000);
    UnMute();
+   lcd.println("Vol: ");
+   lcd.print(attenuation);
 }
 
 void mute()                                       // Records current volume, then sets amp to mute
@@ -342,7 +348,7 @@ void checkBattery()
     
     // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
     // If voltage was previously between 4.10-4.95V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
-    if (lastKnowBattVoltage  >= 4.1 && lastKnowBattVoltage < 4.95 && BattVoltage < 4.1){
+    if (lastKnowBattVoltage >= 4.1 && BattVoltage < 4.1 && isIpad == false){
      isIpad = true;
      VoltageUponIpad = BattVoltage;
      turnDacOn(); 
