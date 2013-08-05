@@ -10,11 +10,6 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-//LCD Stuff
-#include <SoftwareSerial.h>
-SoftwareSerial lcd(10, 1);
-
-
 // PINOUTS (Note: Pinout of centerButton differs between C5 (centerButton=0) and C5D (centerButton=3)
 int upButton = 2;       // Attenuation UP pushbutton
 int downButton = 5;     // Attenuation DOWN pushbutton
@@ -89,14 +84,8 @@ void setup()
   delay(25);                                    // Wait for 5V power to stabilize before enabling 3.3V regulators
   digitalWrite(DACPWREN, LOW); 
   
-  
   // Setup Serial
   Wire.begin();                                  // Join the I2C bus as master device
-  
-  // Setup LCD
-  delay(3000);
-  lcd.begin(9600);                              // start lcd serial
- 
  
   // Sets DS1882 registers to nonvolatile memory, zero-crossing enabled, and 64 tap positions (pg 10 of datasheet)
   // FUTURE: This only needs to be performed once--read register and only write if necessary!
@@ -124,7 +113,6 @@ void setup()
   changeVolume();
 
 }
-
 
 void loop()
 {
@@ -163,16 +151,10 @@ void loop()
                                                         
       if ((uptemp == HIGH) && (attenuation < 63)) {   // Check if button was really pressed and dealing with the direction  
           attenuation++;                              // If user pressed button and volume isn't already at min.
-          
-          clearDisplay(); 
-          lcd.println(attenuation);
       }
 
       if ((downtemp == HIGH) && (attenuation > 0)) {  // If user pressed button and volume isn't already at max.
-          attenuation--;                              // Decrease the potentiometer attenuation value
-          
-          clearDisplay(); 
-          lcd.println(attenuation);
+          attenuation--;                              // Decrease the potentiometer attenuation value 
       }
       
       changeVolume();                                 // Perform initial volume change
@@ -193,10 +175,6 @@ void loop()
             downtemp = digitalRead(downButton);        // Update the down pushbutton
             delay(StepPause);                          // Delay between each step
             attenuation--;                             // Increment attenuation
-          
-            clearDisplay(); 
-          lcd.println(attenuation);
-          
             changeVolume();                            // Perform volume change
           }while((downtemp == HIGH) && (attenuation > 0));    // Ensure attenuation is within valid range
       }
@@ -206,10 +184,6 @@ void loop()
             uptemp = digitalRead(upButton);           // Update the up pushbutton
             delay(StepPause);                         // Delay between each step
             attenuation++;                            // Decrement attenuation
-            
-            clearDisplay(); 
-          lcd.println(attenuation);
-          
             changeVolume();                           // Perform volume change
           }while((uptemp == HIGH) && (attenuation < 63));    // Ensure attenuation is within valid range
       }
@@ -261,12 +235,6 @@ void changeGain()
 
 }
 
-void clearDisplay()
-{
-  lcd.write(0xFE);  // send the special command
-  lcd.write(0x01);  // send the clear screen command
-}
-
 void changeLEDs()
 {
     if(flashState == LOW && lowBatt == true){       // If the battery is low, toggle the LED according to flashState
@@ -284,7 +252,6 @@ void changeLEDs()
 
 void turnDacOn(){                                   // Mutes amp, turns DAC on and waits 2sec for DAC to prepare, then un-mutes
    mute();             
-   lcd.println("Muted");
    DACPowerEnable = HIGH;                           
    digitalWrite(DAC5VEN, HIGH); 
    delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
@@ -292,13 +259,10 @@ void turnDacOn(){                                   // Mutes amp, turns DAC on a
    digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
    delay(1000);
    UnMute();
-   lcd.println("Vol: ");
-   lcd.println(attenuation);
 }
 
 void turnDacOff(){                                 // Mutes amp, turns DAC off and waits 2sec for DAC to prepare, then un-mutes
    mute();
-   lcd.println("Muted");
    digitalWrite(LLF, LOW);                         // Set FLT/LLF low (otherwise 5V is applied to an unpowered chip) 
    DACPowerEnable = LOW;                           
    digitalWrite(DACPWREN, LOW); 
@@ -306,8 +270,6 @@ void turnDacOff(){                                 // Mutes amp, turns DAC off a
    digitalWrite(DAC5VEN, LOW);                     // Wait for 5V power to stabilize before enabling 3.3V regulators 
    delay(1000);
    UnMute();
-   lcd.println("Vol: ");
-   lcd.println(attenuation);
 }
 
 void mute()                                       // Records current volume, then sets amp to mute
@@ -325,11 +287,9 @@ void UnMute(){                                   // Restores volume to level pri
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
 void checkBattery()                                       
 {
-  lastKnowBattVoltage = 0;
+    lastKnowBattVoltage = 0;
     lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
-    
-    //lcd.println(lastKnowBattVoltage, 2);
     
     if(BattVoltage > HighVoltageThreshold){                // Use of hysteresis to avoid erratic LED toggling
       flashState = LOW;                                    // flashState toggles if voltage is below the hysteresis threshold,
@@ -362,16 +322,12 @@ void checkBattery()
     // Conditions for "PC Mode"
     if(BattVoltage >= 4.1 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
       turnDacOn();
-      lcd.println("PC - DAC ON");
-      lcd.println(BattVoltage, 2);
-      delay(1000);
+      //delay(1000);   Removed...why was this here?
       
     }
     else if (DACPowerEnable == HIGH && BattVoltage < 4.1 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
         turnDacOff();   
-        lcd.println("PC - DAC OFF");
-        lcd.println(BattVoltage, 2);
-        delay(1000);        
+        //delay(1000);      Removed...why was this here?    
         }
         
     changeLEDs();                                        // Call LED function to perform toggle
