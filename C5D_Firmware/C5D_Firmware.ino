@@ -290,10 +290,10 @@ void turnDacOn(){                                   // Mutes amp, turns DAC on a
    delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
    digitalWrite(DACPWREN, HIGH); 
    digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
-   delay(2000);
+   delay(1000);
    UnMute();
    lcd.println("Vol: ");
-   lcd.print(attenuation);
+   lcd.println(attenuation);
 }
 
 void turnDacOff(){                                 // Mutes amp, turns DAC off and waits 2sec for DAC to prepare, then un-mutes
@@ -304,10 +304,10 @@ void turnDacOff(){                                 // Mutes amp, turns DAC off a
    digitalWrite(DACPWREN, LOW); 
    delay(25); 
    digitalWrite(DAC5VEN, LOW);                     // Wait for 5V power to stabilize before enabling 3.3V regulators 
-   delay(2000);
+   delay(1000);
    UnMute();
    lcd.println("Vol: ");
-   lcd.print(attenuation);
+   lcd.println(attenuation);
 }
 
 void mute()                                       // Records current volume, then sets amp to mute
@@ -329,7 +329,7 @@ void checkBattery()
     lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
     
-    lcd.println(lastKnowBattVoltage, 2);
+    //lcd.println(lastKnowBattVoltage, 2);
     
     if(BattVoltage > HighVoltageThreshold){                // Use of hysteresis to avoid erratic LED toggling
       flashState = LOW;                                    // flashState toggles if voltage is below the hysteresis threshold,
@@ -348,7 +348,7 @@ void checkBattery()
     
     // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
     // If voltage was previously between 4.10-4.95V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
-    if (lastKnowBattVoltage >= 4.1 && BattVoltage < 4.1 && isIpad == false){
+    if (lastKnowBattVoltage >= 4.1 && lastKnowBattVoltage < 4.95 && BattVoltage < 4.1 && isIpad == false){
      isIpad = true;
      VoltageUponIpad = BattVoltage;
      turnDacOn(); 
