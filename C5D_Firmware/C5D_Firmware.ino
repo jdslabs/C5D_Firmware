@@ -172,7 +172,8 @@ void loop()
           attenuation--;                              // Decrease the potentiometer attenuation value
           
           clearDisplay(); 
-          lcd.println(attenuation);
+          lcd.print("-");
+          lcd.print(attenuation);
       }
       
       changeVolume();                                 // Perform initial volume change
@@ -194,8 +195,9 @@ void loop()
             delay(StepPause);                          // Delay between each step
             attenuation--;                             // Increment attenuation
           
-            clearDisplay(); 
-          lcd.println(attenuation);
+          clearDisplay(); 
+          lcd.print("-");
+          lcd.print(attenuation);
           
             changeVolume();                            // Perform volume change
           }while((downtemp == HIGH) && (attenuation > 0));    // Ensure attenuation is within valid range
