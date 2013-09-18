@@ -1,6 +1,6 @@
 // C5D v1.00a FIRMWARE
 // ----------------------------------------------------------------------------
-// Version:     1.1.0 -- Working.
+// Version:     1.1.0 -- Production firmware for C5D v1.00
 // Date:        July 30, 2013
 // Authors:     John and Nick @ JDS Labs, Inc.
 // Requires:    Arduino Bootloader, Arduino 1.0.1
