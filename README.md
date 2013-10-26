@@ -1,6 +1,6 @@
 C5D Firmware
 =========================
-Evaluation firmware...
+Production firmware for C5D
 
 AUTHORS:  	
 John & Nick @jdslabs
