@@ -1,7 +1,7 @@
 // C5D v1.00a FIRMWARE
 // ----------------------------------------------------------------------------
 // Version:     1.1.1 -- Production firmware for C5D v1.01
-// Date:        December 13, 2013
+// Date:        December 14, 2013
 // Authors:     John and Nick @ JDS Labs, Inc.
 // Requires:    Arduino Bootloader, Arduino 1.0.1
 // License:     Creative Commons Attribution-ShareAlike 3.0 Unported
@@ -42,9 +42,6 @@ unsigned long volumeChangeTimer = 0;         // Time of Last Volume Change
 unsigned long gainChangeTimer = 0;           // Time of Last Gain Change
 unsigned long startTime = 0;                 // Start time for Volume Change Debounce
 boolean lowBatt = false;                     // Low Battery Indicator
-float lastKnowBattVoltage = 0;               // Battery Voltage for iPad Operations....poorly commented 
-float VoltageUponIpad = 0;                   // Recorded Battery voltage at time of iPad connection
-boolean isIpad = false;                      // If the amp thinks it is an iPad...
 
 // CONFIGURATION CONSTANTS
 int DACFilterState = HIGH;                   // Default state of PCM5102A's low latency filter: High = enabled, Low = disabled
@@ -110,7 +107,8 @@ void setup()
   {
     attenuation = 62;
   }
-  changeVolume();
+  changeVolume();                                  // Set volume to last known level
+  turnDacOn();                                     // Turn the DAC on
 
 }
 
@@ -257,7 +255,7 @@ void turnDacOn(){                                   // Mutes amp, turns DAC on a
    delay(25);                                       // Wait for 5V power to stabilize before enabling 3.3V regulators
    digitalWrite(DACPWREN, HIGH); 
    digitalWrite(LLF, DACFilterState);               // Set low latency filter to default value 
-   delay(1000);
+   delay(500);
    UnMute();
 }
 
@@ -268,7 +266,7 @@ void turnDacOff(){                                 // Mutes amp, turns DAC off a
    digitalWrite(DACPWREN, LOW); 
    delay(25); 
    digitalWrite(DAC5VEN, LOW);                     // Wait for 5V power to stabilize before enabling 3.3V regulators 
-   delay(1000);
+   delay(500);
    UnMute();
 }
 
@@ -287,8 +285,6 @@ void UnMute(){                                   // Restores volume to level pri
 // checkBattery monitors operating voltage and sets DAC power and LED flashing accordingly
 void checkBattery()                                       
 {
-    lastKnowBattVoltage = 0;
-    lastKnowBattVoltage = BattVoltage;
     BattVoltage = (float)analogRead(PREBOOST)*4.95/1023;   // Note: 4.95V is imperical value of C5's 5V rail
     
     if(BattVoltage > HighVoltageThreshold){                // Use of hysteresis to avoid erratic LED toggling
@@ -304,28 +300,6 @@ void checkBattery()
     }
     else{
       flashState = LOW;
-    }
-    
-    // Logic below enables/disables DAC. DAC must not be turnd off after connection to an iPad (iPad voltage unpredictable).
-    // If voltage was previously between 4.10-4.95V, but has dropped to battery voltage in < 500ms, an iPad might be connected.
-    if (lastKnowBattVoltage >= 4.1 && lastKnowBattVoltage < 4.95 && BattVoltage < 4.1 && isIpad == false){
-     isIpad = true;
-     VoltageUponIpad = BattVoltage;
-     turnDacOn(); 
-    }
-    
-    // If voltage exceeds iPad's capability, it must not be an iPad --> Code disabled effective v1.01. System voltage is now
-    // battery voltage when operating in self-power mode
-    //if ((lastKnowBattVoltage > 4.9) && (BattVoltage > 4.80) && isIpad == true && (BattVoltage > VoltageUponIpad + 0.12)){
-    //  isIpad = false;                        
-    //}
-    
-    // Conditions for "PC Mode"
-    if(BattVoltage >= 4.1 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
-      turnDacOn();      
-    }
-    else if (DACPowerEnable == HIGH && BattVoltage < 4.1 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
-        turnDacOff();    
     }
         
     changeLEDs();                                        // Call LED function to perform toggle
