@@ -1,7 +1,7 @@
 // C5D v1.00a FIRMWARE
 // ----------------------------------------------------------------------------
-// Version:     1.1.1 -- Production firmware for C5D v1.01
-// Date:        December 13, 2013
+// Version:     1.1.0 -- Production firmware for C5D v1.00
+// Date:        July 30, 2013
 // Authors:     John and Nick @ JDS Labs, Inc.
 // Requires:    Arduino Bootloader, Arduino 1.0.1
 // License:     Creative Commons Attribution-ShareAlike 3.0 Unported
@@ -314,19 +314,21 @@ void checkBattery()
      turnDacOn(); 
     }
     
-    // If voltage exceeds iPad's capability, it must not be an iPad --> Code disabled effective v1.01. System voltage is now
-    // battery voltage when operating in self-power mode
-    //if ((lastKnowBattVoltage > 4.9) && (BattVoltage > 4.80) && isIpad == true && (BattVoltage > VoltageUponIpad + 0.12)){
-    //  isIpad = false;                        
-    //}
+    // If voltage exceeds iPad's capability, it must not be an iPad...
+    if ((lastKnowBattVoltage > 4.9) && (BattVoltage > 4.80) && isIpad == true && (BattVoltage > VoltageUponIpad + 0.12)){
+      isIpad = false;                        
+    }
     
     // Conditions for "PC Mode"
     if(BattVoltage >= 4.1 && isIpad == false && DACPowerEnable == LOW){        // If DAC is off and USB cable is connected, enable DAC                              
-      turnDacOn();      
+      turnDacOn();
+      //delay(1000);   Removed...why was this here?
+      
     }
     else if (DACPowerEnable == HIGH && BattVoltage < 4.1 && isIpad == false){     // If DAC is on and USB cable is unplugged, disable DAC
-        turnDacOff();    
-    }
+        turnDacOff();   
+        //delay(1000);      Removed...why was this here?    
+        }
         
     changeLEDs();                                        // Call LED function to perform toggle
   }
