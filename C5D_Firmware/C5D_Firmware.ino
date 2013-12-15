@@ -1,11 +1,11 @@
-// C5D v1.00a FIRMWARE
+// C5D v1.01 PRODUCTION FIRMWARE
 // ----------------------------------------------------------------------------
-// Version:     1.2.0 -- Production firmware for C5D v1.01
-// Date:        December 14, 2013
-// Authors:     John and Nick @ JDS Labs, Inc.
-// Requires:    Arduino Bootloader, Arduino 1.0.1
-// License:     Creative Commons Attribution-ShareAlike 3.0 Unported
-//              http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
+// Code Version:  1.2.0
+// Code Date:     December 14, 2013
+// Authors:       John and Nick @ JDS Labs, Inc.
+// Requires:      Arduino Bootloader, Arduino 1.0.1
+// License:       Creative Commons Attribution-ShareAlike 3.0 Unported
+//                http://creativecommons.org/licenses/by-sa/3.0/deed.en_US
 
 #include <Wire.h>
 #include <EEPROM.h>
